@@ -93,3 +93,114 @@ class AppTheme {
     bottomAppBarTheme: BottomAppBarTheme(color: _appbarColorDark),
   );
 }
+
+
+  generatePDFFile() async {
+    final img = await rootBundle.load('assets/images/headerlogo.png');
+    final imageBytes = img.buffer.asUint8List();
+    try {
+      final pdf = pw.Document();
+
+      pdf.addPage(
+        pw.MultiPage(
+            pageFormat: PdfPageFormat.a4,
+            header: (context) {
+              return pw.Column(children: [
+                pw.Container(
+                  // height: 100,
+                  // width: 200,
+                  alignment: pw.Alignment.topLeft,
+                  child: pw.Image(pw.MemoryImage(imageBytes),
+                      width: 100, height: 100),
+                ),
+                pw.Divider(color: PdfColors.black, thickness: 0.5)
+              ]);
+            },
+            footer: (context) {
+              return pw.Column(children: [
+                pw.Divider(color: PdfColors.black, thickness: 0.5),
+                pw.Align(
+                    alignment: pw.Alignment.bottomLeft,
+                    child: pw.Row(children: [
+                      pw.Text("Blood Pressure Report"),
+                      pw.Align(
+                        alignment: pw.Alignment.topLeft,
+                        child: pw.UrlLink(
+                          destination: 'https://wikipedia.org/wiki/PDF',
+                          child: pw.Text(
+                            'https://wikipedia.org/wiki/PDF',
+                            style: const pw.TextStyle(
+                              color: PdfColors.pink100,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ])),
+              ]);
+            },
+            build: (pw.Context context) => <pw.Widget>[
+                  pw.SizedBox(
+                    height: 10,
+                  ),
+                  pw.Text('Blood Pressure Report',
+                      style: pw.TextStyle(
+                          fontSize: 20,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.black)),
+                  pw.SizedBox(
+                    height: 30,
+                  ),
+                  pw.Table.fromTextArray(data: <List<String>>[
+                    <String>['Person', 'Report Date', 'Systolic', 'Diastolic'],
+                    for (var i = 0; i < model.records.length; i++)
+                      <String>[
+                        model.records[i].person,
+                        model.records[i].reportDate,
+                        model.records[i].systolic,
+                        model.records[i].diastolic
+                      ]
+                  ])
+                  // pw.TableHelper.fromTextArray(
+                  //   context: context,
+                  //   data: const <List<String>>[
+                  //     <String>['Date', 'PDF Version', 'Acrobat Version'],
+                  //     <String>['1993', 'PDF 1.0', 'Acrobat 1'],
+                  //     <String>['1994', 'PDF 1.1', 'Acrobat 2'],
+                  //     <String>['1996', 'PDF 1.2', 'Acrobat 3'],
+                  //     <String>['1999', 'PDF 1.3', 'Acrobat 4'],
+                  //     <String>['2001', 'PDF 1.4', 'Acrobat 5'],
+                  //     <String>['2003', 'PDF 1.5', 'Acrobat 6'],
+                  //     <String>['2005', 'PDF 1.6', 'Acrobat 7'],
+                  //     <String>['2006', 'PDF 1.7', 'Acrobat 8'],
+                  //     <String>['2008', 'PDF 1.7', 'Acrobat 9'],
+                  //     <String>['2009', 'PDF 1.7', 'Acrobat 9.1'],
+                  //     <String>['2010', 'PDF 1.7', 'Acrobat X'],
+                  //     <String>['2012', 'PDF 1.7', 'Acrobat XI'],
+                  //     <String>['2017', 'PDF 2.0', 'Acrobat DC'],
+                  //   ],
+                  // ),
+                ]),
+      );
+
+      final filename = "bloodpressure${DateTime.now().toString()}.pdf";
+      final path = await getExternalStorageDirectory();
+      final file = File("${path.path}/$filename");
+
+      await file.writeAsBytes(await pdf.save());
+
+      try {
+        if (await file.exists()) {
+          OpenFile.open(file.path);
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('No app available to open the PDF'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    } catch (e, _) {
+      print("print the pdf");
+      print(e);
+      print(_);
+    }
+  }
